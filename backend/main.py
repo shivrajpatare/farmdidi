@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -242,20 +243,39 @@ def receive_production(req: ProductionRequest):
         )
 
     try:
-        production = parse_production_message(req.message)
+        existing = session.production
+        # Check if user is confirming unit (e.g. "haan", "yes") when quantity exists without unit
+        if (
+            existing is not None
+            and existing.quantity is not None
+            and not existing.unit
+            and re.search(r"^(?:haan|ha|yes|sahi|theek|thik|ji haan|ji|yep)\b", req.message.strip(), re.IGNORECASE)
+        ):
+            production = ProductionUpdate(
+                production_status=existing.production_status or "planned",
+                product=existing.product,
+                quantity=existing.quantity,
+                unit="kg",
+            )
+        else:
+            production = parse_production_message(req.message)
 
         # ── Merge with existing partial candidate ──
         # If the session already holds a partial production candidate and the new
         # parse is also partial, merge them so that multi-turn inputs accumulate.
-        existing = session.production
         if existing is not None and production.production_status != "none":
+            new_prod = production.product
+            # If new message doesn't specify a product, retain existing product (even if ambiguous)
+            if not new_prod:
+                new_prod = existing.product
+
             merged = ProductionUpdate(
                 production_status=(
                     production.production_status
                     if production.production_status not in (None, "unclear")
                     else existing.production_status
                 ),
-                product=production.product if production.product else existing.product,
+                product=new_prod,
                 quantity=production.quantity if production.quantity is not None else existing.quantity,
                 unit=production.unit if production.unit else existing.unit,
             )
@@ -269,7 +289,12 @@ def receive_production(req: ProductionRequest):
                 session_id=session.session_id,
                 state=session.state.value,
                 validation_status=validation.status,
-                message=_production_validation_message(validation.status, validation.errors),
+                message=_production_validation_message(
+                    validation.status,
+                    validation.errors,
+                    production=production,
+                    raw_message=req.message,
+                ),
             )
         message = engine.receive_production(session, production)
     except (RuntimeError, ValueError) as e:
@@ -475,11 +500,48 @@ def correct_checkin(req: CorrectionRequest):
     )
 
 
-def _production_validation_message(status: str, errors: list[str]) -> str:
-    if status == "incomplete" and any("quantity" in error.lower() for error in errors):
+def _production_validation_message(
+    status: str,
+    errors: list[str],
+    production: Optional[ProductionUpdate] = None,
+    raw_message: str = "",
+) -> str:
+    # 1. Ambiguous product (e.g. "Lemon Achar or Mango Achar", "lemon or aam")
+    if production and production.product and (" or " in production.product.lower() or " ya " in production.product.lower()):
+        parts = [p.strip() for p in re.split(r"\s+(?:or|ya)\s+", production.product, flags=re.IGNORECASE) if p.strip()]
+        if len(parts) >= 2:
+            return f"Aap {parts[0]} bana rahi hain ya {parts[1]}?"
+        return "Aap kaunsa achar bana rahi hain?"
+
+    if any("ambiguous" in err.lower() and "product" in err.lower() for err in errors):
+        return "Aap kaunsa achar bana rahi hain?"
+
+    # 2. Invalid quantity (<= 0 or not finite)
+    if any("greater than zero" in err.lower() or "finite" in err.lower() for err in errors):
+        return "Quantity 0 se zyada honi chahiye."
+
+    # 3. Ambiguous quantity range (e.g. "20 ya 30 kilo")
+    if raw_message and re.search(r"\b\d+(?:\.\d+)?\s*(?:ya|or|-)\s*\d+(?:\.\d+)?\b", raw_message, re.IGNORECASE):
         return "Quantity kitni hai? Please quantity batayein."
-    if status == "invalid" and any("product" in error.lower() for error in errors):
+
+    # 4. Invalid product (not in catalog, e.g. "Pizza")
+    if any("catalog" in err.lower() and "product" in err.lower() for err in errors):
         return "Product catalog mein ye product nahi mila."
+
+    # 5. Missing product
+    if (production and not production.product) or any("product is missing" in err.lower() for err in errors):
+        return "Aap kaunsa achar bana rahi hain?"
+
+    # 6. Missing quantity
+    if (production and production.quantity is None) or any("quantity is missing" in err.lower() for err in errors):
+        if production and production.product and " or " not in production.product.lower() and " ya " not in production.product.lower():
+            return f"Kitna {production.product} bana rahi hain?"
+        return "Kitna bana rahi hain?"
+
+    # 7. Missing unit
+    if (production and production.quantity is not None and not production.unit) or any("unit is missing" in err.lower() for err in errors):
+        return "Quantity kg mein hai?"
+
     return "Thoda aur production detail batayein."
 
 

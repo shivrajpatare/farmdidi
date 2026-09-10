@@ -73,6 +73,8 @@ def validate_production(
 	if production.production_status in {"planned", "completed"}:
 		if not production.product:
 			incomplete.append("Production product is missing.")
+		elif " or " in (production.product or "").lower() or " ya " in (production.product or "").lower():
+			incomplete.append(f"Production product is ambiguous: {production.product}")
 		elif product is None or not product.get("active", False):
 			errors.append("Production product is not in the active catalog.")
 
