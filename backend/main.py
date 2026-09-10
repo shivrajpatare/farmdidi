@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from datetime import date
 from typing import Optional
 
+from backend.config import settings
 from backend.models import CheckInRecord, IssueRecord, IssueUpdate, ProductionUpdate
 from backend.services.ai import (
     parse_correction_message,
@@ -59,9 +60,24 @@ app = FastAPI(
     version="0.1.0",
 )
 
+DEFAULT_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://farmdidi.vercel.app",
+    "https://farmdidi-5h5qjlbyd-shivraj-patares-projects.vercel.app",
+]
+
+allowed_origins = list(DEFAULT_ALLOWED_ORIGINS)
+if settings.frontend_url:
+    for url in settings.frontend_url.split(","):
+        cleaned = url.strip().rstrip("/")
+        if cleaned and cleaned not in allowed_origins:
+            allowed_origins.append(cleaned)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://farmdidi.*\.vercel\.app$",
     allow_methods=["*"],
     allow_headers=["*"],
 )

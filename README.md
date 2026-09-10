@@ -451,6 +451,8 @@ The frontend will be accessible at: `http://localhost:5173/`
 | `PORT` | No | `8000` | Port for FastAPI server |
 | `APP_NAME` | No | `FarmDidi Daily Production Check-in` | Application display name |
 | `APP_ENV` | No | `development` | Environment mode (`development` / `production`) |
+| `FRONTEND_URL` | No | `https://farmdidi.vercel.app` | Comma-separated allowed frontend origins for CORS |
+| `VITE_API_BASE_URL` | No | `http://localhost:8000` | Frontend API base URL (set to Render API in production) |
 
 ---
 

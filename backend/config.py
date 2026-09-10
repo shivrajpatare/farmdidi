@@ -12,6 +12,7 @@ class Settings:
     app_env: str = os.getenv("APP_ENV", "development")
     host: str = os.getenv("HOST", "127.0.0.1")
     port: int = int(os.getenv("PORT", "8000"))
+    frontend_url: str = os.getenv("FRONTEND_URL", "")
 
 
 settings = Settings()
