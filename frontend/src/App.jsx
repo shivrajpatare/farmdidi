@@ -3,7 +3,9 @@ import ChatWindow from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
 import OperationsView from "./components/OperationsView";
 
-const API = "http://localhost:8000";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+).replace(/\/+$/, "");
 
 const DIDIS = [
   { id: "D002", name: "Sunita" },
@@ -49,7 +51,7 @@ function App() {
   // ----- API helpers -----
 
   async function apiPost(path, body) {
-    const res = await fetch(`${API}${path}`, {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -223,7 +225,7 @@ function App() {
       </header>
 
       {currentView === "operations" ? (
-        <OperationsView apiBase={API} />
+        <OperationsView apiBase={API_BASE_URL} />
       ) : (
         <div className="checkin-body">
           {!started ? (
