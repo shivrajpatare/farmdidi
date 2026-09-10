@@ -1,0 +1,32 @@
+[
+  {
+    "didi_id": "D001",
+    "name": "Meena",
+    "language": "Hindi",
+    "active": true
+  },
+  {
+    "didi_id": "D002",
+    "name": "Sunita",
+    "language": "Hindi",
+    "active": true
+  },
+  {
+    "didi_id": "D003",
+    "name": "Asha",
+    "language": "Hinglish",
+    "active": true
+  },
+  {
+    "didi_id": "D004",
+    "name": "Rekha",
+    "language": "Marathi",
+    "active": true
+  },
+  {
+    "didi_id": "D005",
+    "name": "Lata",
+    "language": "Hindi",
+    "active": true
+  }
+]

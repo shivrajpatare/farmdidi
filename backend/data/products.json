@@ -1,0 +1,37 @@
+[
+  {
+    "product_id": "P001",
+    "name": "Mango Achar",
+    "category": "Achar",
+    "unit": "kg",
+    "active": true
+  },
+  {
+    "product_id": "P002",
+    "name": "Lemon Achar",
+    "category": "Achar",
+    "unit": "kg",
+    "active": true
+  },
+  {
+    "product_id": "P003",
+    "name": "Chilli Achar",
+    "category": "Achar",
+    "unit": "kg",
+    "active": true
+  },
+  {
+    "product_id": "P004",
+    "name": "Mixed Achar",
+    "category": "Achar",
+    "unit": "kg",
+    "active": true
+  },
+  {
+    "product_id": "P005",
+    "name": "Garlic Achar",
+    "category": "Achar",
+    "unit": "kg",
+    "active": true
+  }
+]
